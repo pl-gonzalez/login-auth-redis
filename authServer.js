@@ -16,20 +16,45 @@ const posts = [
         title: "Post 2"
     }
 ]
+
+// apenas para teste, em produção nao é ideal
+const refreshTokens = []
 app.use(express.json())
 
-// app.post('/users', async (req, res) => {
-//     try {
-//         const hashedPassword = await bcrypt.hash(req.body.password, 10) // 10 is a default value of genSalt()
-//         console.log(hashedPassword)
-//         const user = {name: req.body.name, password: hashedPassword}
-//         users.push(user)
-//         res.send(user)
-//         res.status(201).send()
-//     } catch (error) {
-//         res.status(500).send()
-//     }
-// })
+app.post('/token', (req,res) => {
+    const refreshToken = req.body.token
+    if( refreshToken == null) return res.sendStatus(401)
+    if(!refreshToken.includes(refreshToken)) return res.sendStatus(403)
+
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        if(err) return sendStatus(403)
+
+        // const accessToken = generateAccessToken(user) -> Dessa forma, todas a informações serão criptografadas novamente, inclusive o token expridado(?)
+        /**
+         * {
+            "name": "Vitoria",
+            "iat": 1708907548,
+            "exp": 1708907578
+            }
+         */
+        
+        const accessToken = generateAccessToken({name: user.name})
+        res.json(accessToken)
+    })
+})
+
+app.post('/users', async (req, res) => {
+    try {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10) // 10 is a default value of genSalt()
+        console.log(hashedPassword)
+        const user = {name: req.body.name, password: hashedPassword}
+        users.push(user)
+        res.send(user)
+        res.status(201).send()
+    } catch (error) {
+        res.status(500).send()
+    }
+})
 
 app.post('/users/login', async (req,res) =>{
     // Valida Login
@@ -39,12 +64,15 @@ app.post('/users/login', async (req,res) =>{
     }
     try {
         if(await bcrypt.compare(req.body.password, user.password)){
-            console.log("success")
+            // console.log("success")
 
             // Cria JWT
             // Objeto user é passado p jwt
-            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET)
-            res.send({accessToken: accessToken})
+            const accessToken = generateAccessToken(user)
+            const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET) // Sem data de expiração, pode ser trocado na rota de logout. Pesquisar sobre metodos usados
+            refreshTokens.push(refreshToken)
+            console.log({accessToken: accessToken, refreshToken: refreshToken})
+            res.send({accessToken: accessToken, refreshToken: refreshToken})
         } else {
             res.send('Not allowed')
         }
@@ -52,6 +80,10 @@ app.post('/users/login', async (req,res) =>{
         res.status(500).send()
     }
 })
+
+function generateAccessToken(user){
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 30})
+}
 
 // app.get('/', (req, res) => {
 //     res.json(users)

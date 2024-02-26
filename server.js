@@ -18,18 +18,18 @@ const posts = [
 ]
 app.use(express.json())
 
-app.post('/users', async (req, res) => {
-    try {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10) // 10 is a default value of genSalt()
-        console.log(hashedPassword)
-        const user = {name: req.body.name, password: hashedPassword}
-        users.push(user)
-        res.send(user)
-        res.status(201).send()
-    } catch (error) {
-        res.status(500).send()
-    }
-})
+// app.post('/users', async (req, res) => {
+//     try {
+//         const hashedPassword = await bcrypt.hash(req.body.password, 10) // 10 is a default value of genSalt()
+//         console.log(hashedPassword)
+//         const user = {name: req.body.name, password: hashedPassword}
+//         users.push(user)
+//         res.send(user)
+//         res.status(201).send()
+//     } catch (error) {
+//         res.status(500).send()
+//     }
+// })
 
 // app.post('/users/login', async (req,res) =>{
 //     // Valida Login
