@@ -17,14 +17,17 @@ const posts = [
     }
 ]
 
+
 // apenas para teste, em produção nao é ideal
-const refreshTokens = []
+let refreshTokens = []
+
+
 app.use(express.json())
 
 app.post('/token', (req,res) => {
     const refreshToken = req.body.token
     if( refreshToken == null) return res.sendStatus(401)
-    if(!refreshToken.includes(refreshToken)) return res.sendStatus(403)
+    if(!refreshTokens.includes(refreshToken)) return res.sendStatus(403)
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
         if(err) return sendStatus(403)
@@ -37,10 +40,15 @@ app.post('/token', (req,res) => {
             "exp": 1708907578
             }
          */
-        
+
         const accessToken = generateAccessToken({name: user.name})
         res.json(accessToken)
     })
+})
+
+app.delete('/logout', (req,res) => {
+    refreshTokens = refreshTokens.filter(token => token !== req.body.token)
+    res.sendStatus(204)
 })
 
 app.post('/users', async (req, res) => {
