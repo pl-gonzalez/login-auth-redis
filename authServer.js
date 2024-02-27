@@ -90,7 +90,7 @@ app.post('/users/login', async (req,res) =>{
 })
 
 function generateAccessToken(user){
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 30})
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "2 days"})
 }
 
 // app.get('/', (req, res) => {

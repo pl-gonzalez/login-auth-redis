@@ -2,9 +2,21 @@ require('dotenv').config()
 const express = require('express')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const Redis = require('redis')
 
-const app = express()
+const redisClient = Redis.createClient();
 
+const app = express();
+
+(async () => {
+    await redisClient.connect();
+    console.log("Connected")
+})();
+
+// redisClient.on('connect', () => console.log('Redis Client Connected'));
+// redisClient.on('error', (err) => console.log('Redis Client Connection Error', err));
+
+const DEFAULT_EXPIRATION = 10600;
 const users = []
 const posts = [
     {
@@ -309,8 +321,34 @@ app.use(express.json())
 //     res.json(users)
 // })
 
-app.get('/posts', authToken, (req, res) => {
-    res.json(posts.filter(post => post.name === req.user.name))
+app.get('/posts', authToken, async (req, res) => {
+    const filterPosts = posts.filter(post => post.name === req.user.name);
+    const cachedPosts = await redisClient.get('posts') || null;
+    if(cachedPosts != null){
+        console.log('retirei do cache com redis');
+        return res.json(posts);
+    } else {
+        redisClient.set('posts', JSON.stringify(filterPosts));
+        console.log('Nao tinha em cache, tive que pesquisar no "banco" hehe');
+    
+        res.json(filterPosts);
+    }
+    // redisClient.get('posts', async (error, posts) => {
+    //     if(error) console.log(error);
+    //     console.log(posts);
+    //     if(posts != null){
+    //         console.log('retirei do cache com redis');
+    //         return res.json(JSON.parse(posts));
+    //     } else {
+    //         // nao imagino que irei ver diferença, pq os dados do posts não estao em banco de dados, porém sera possivel ver o caminho feito pelo redis
+            
+    //         redisClient.set('posts', JSON.stringify(filterPosts));
+    //         console.log('Nao tinha em cache, tive que pesquisar no "banco" hehe');
+            
+    //         res.json(filterPosts);
+    //     }
+    // });
+    
 })
 
 // Verifica o JWT do usuario realizando o request
